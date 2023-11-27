@@ -132,9 +132,7 @@ class PlayerActivity : BaseActivity() {
         viewModel.saveCurrentEpisodeWatchingProgress()
 
         lifecycleScope.launchNonCancellable {
-            viewModel.mutableState.update {
-                it.copy(isLoadingEpisode = true)
-            }
+            viewModel.mutableState.update { it.copy(isLoadingEpisode = true) }
 
             val initResult = viewModel.init(animeId, episodeId)
             if (!initResult.second.getOrDefault(false)) {
@@ -275,10 +273,10 @@ class PlayerActivity : BaseActivity() {
 
     private var hadPreviousAudio = false
 
-    internal var videoChapters
-        get() = viewModel.state.value.videoChapters.value
+    private var videoChapters
+        get() = viewModel.state.value.videoChapters
         set(value) {
-            viewModel.state.value.videoChapters.value = value
+            viewModel.mutableState.update { it.copy(videoChapters = value) }
             runOnUiThread {
                 playerControls.seekbar.updateSeekbar(chapters = value)
             }
@@ -507,8 +505,6 @@ class PlayerActivity : BaseActivity() {
         }
 
         binding.controlsRoot.setComposeContent {
-            val state by viewModel.state.collectAsState()
-            state.videoChapters.value
             PlayerControls(
                 activity = this,
             )
@@ -1337,6 +1333,12 @@ class PlayerActivity : BaseActivity() {
             updatePlaybackStatus(player.paused ?: return@launchUI)
             playerControls.updatePlaylistButtons()
             player.playbackSpeed?.let { playerPreferences.playerSpeed().set(it.toFloat()) }
+            viewModel.updateSkipIntroText(
+                getString(
+                    R.string.player_controls_skip_intro_text,
+                    viewModel.getAnimeSkipIntroLength(),
+                )
+            )
             withIOContext { player.loadTracks() }
         }
     }
